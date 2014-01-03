@@ -227,10 +227,13 @@ def mkMessage content
   #title = CGI.unescapeHTML(CGI.unescapeHTML(content[1].delHTMLtag).to_ja.abbr)
   #abst = CGI.unescapeHTML(content[2].delHTMLtag).to_ja
   if abst =~ /。/
-    $'.strip! 
+    $'.strip!
     abst = $' if $'.size>0
   end
   p abst.unescapeHTML if $DEBUG
+  abst = abst.unescapeHTML.abbr
+  abst.strip!
+  return nil if abst == ""
   ret = title + " " + url + " " + abst.unescapeHTML.abbr
   p ret if $DEBUG
   p ret[/(^.{140})/,1] if $DEBUG
@@ -239,9 +242,7 @@ def mkMessage content
 end
 
 if __FILE__ == $0
-  unless $DEBUG
-    Twitter.configure do |config|
-    end
+  client = Twitter::REST::Client.new do |config|
   end
   #PID_FILE = File.expand_path "./#{File.basename(__FILE__,'.rb')}.pid"
   # # コマンドラインオプション -k が指令されたら、プロセスをkillする
@@ -317,8 +318,15 @@ if __FILE__ == $0
         else
           while msg
             begin
-              Twitter.update msg unless $DEBUG
+              client.update msg unless $DEBUG
             rescue
+              if $!.to_s == "Status is over 140 characters."
+                msg = msg[0...-1]
+                retry
+              end
+              puts "ERR[#{$!}]: Wait #{300} seconds."
+              p $!
+              puts "MSG: #{msg}"
               sleep $DEBUG ? 10 : 300 ;
               next
             end
