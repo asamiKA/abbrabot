@@ -182,13 +182,6 @@ end
 #  # abst_EXP = %r!<dd id="articleAbsctract">.*?<P>(.*?)</P>!im
 #  # return get_cont source,item_EXP,title_EXP,abst_EXP
 #end
-def bit_ly url
-  url = ERB::Util.url_encode(url)
-  result = JSON.parse(Net::HTTP.get("api.bit.ly", "/shorten?#{query}"))
-  short_url = ""
-  result['results'].each_pair { |long_url, value| short_url = value['shortUrl'] }
-  return short_url
-end
 class String
   def unescapeHTML
     str = CGI.unescapeHTML(self)
@@ -218,10 +211,11 @@ class String
     return nil
   end
 end
-def mkMessage content
+def mkMessage content,url_length
   p content if $DEBUG
   content.map!{ |x| x.gsub(/[\n\r]/,' ')}
-  url = bit_ly content[0]
+  #url = bit_ly content[0]
+  url = content[0]
   title = (content[1].unescapeHTML.delHTMLtag).unescapeHTML.to_ja.unescapeHTML.abbr
   abst = (content[2].unescapeHTML.delHTMLtag).unescapeHTML.split("\n").map{ |x| x.strip}.join(' ').to_ja
   #title = CGI.unescapeHTML(CGI.unescapeHTML(content[1].delHTMLtag).to_ja.abbr)
@@ -233,27 +227,29 @@ def mkMessage content
   p abst.unescapeHTML if $DEBUG
   abst = abst.unescapeHTML.abbr
   abst.strip!
+  abst = abst.unescapeHTML.abbr
   return nil if abst == ""
-  ret = title + " " + url + " " + abst.unescapeHTML.abbr
+  abst_length = 140 - title.size - url_length - 2
+  abst = abst[/\A(.{#{abst_length}}/] if abst.size > abst_length
+  ret = title + " " + url + " " + abst
   p ret if $DEBUG
-  p ret[/(^.{140})/,1] if $DEBUG
-  return ret[/\A(.{140})/,1] if ret.chars.count > 140
   return ret
 end
 
-if __FILE__ == $0
-  client = Twitter::REST::Client.new do |config|
+def read_twitter_config(file)
+  conf = IO.foreach(file).map(&:chomp)
+  return  Twitter::REST::Client.new do |config|
+    config.consumer_key = conf[0]
+    config.consumer_secret = conf[1]
+    config.oauth_token = conf[2]
+    config.oauth_token_secret = conf[3]
   end
-  #PID_FILE = File.expand_path "./#{File.basename(__FILE__,'.rb')}.pid"
-  # # コマンドラインオプション -k が指令されたら、プロセスをkillする
-  # if ARGV.shift == '-k'
-  #   if File.exist? PID_FILE
-  #     Process.kill :SIGTERM, File.read(PID_FILE).to_i
-  #     File.unlink PID_FILE
-  #   end
-  #   exit 0
-  # end
-  #File.open(PID_FILE,'w'){ |x| x.print Process.pid}
+end
+
+if __FILE__ == $0
+  exit 1 unless ARGV[0]
+  client = read_twitter_config(ARGV[0])
+  exit 1 unless client
   source_PRL = ['http://feeds.aps.org/rss/tocsec/PRL-SoftMatterBiologicalandInterdisciplinaryPhysics.xml']
   source_PRE = ['http://feeds.aps.org/rss/tocsec/PRE-Biologicalphysics.xml',
                 'http://feeds.aps.org/rss/tocsec/PRE-Statisticalphysics.xml',
@@ -282,6 +278,8 @@ if __FILE__ == $0
                       'http://www.pnas.org/rss/Physics.xml']
   while true
     now = Time.now
+    url_length = client.configuration.short_url_length if (now.hour == 8 && now.min < 30) || url_length == nil
+    p "url_length: #{ url_length }"
     if (now.wday.between? 1,6) && (now.hour.between? 8,19)
       sources = [source_PRL,source_PRE,
                  source_EPL,
@@ -312,7 +310,7 @@ if __FILE__ == $0
       end
       if cont
         write_log cont[0] unless $DEBUG
-        msg = mkMessage cont
+        msg = mkMessage cont,url_length
         if $DEBUG
           p msg 
         else
