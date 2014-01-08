@@ -230,7 +230,7 @@ def mkMessage content,url_length
   abst = abst.unescapeHTML.abbr
   return nil if abst == ""
   abst_length = 140 - title.size - url_length - 2
-  abst = abst[/\A(.{#{abst_length}}/] if abst.size > abst_length
+  abst = abst[/\A(.{#{abst_length}})/] if abst.size > abst_length
   ret = title + " " + url + " " + abst
   p ret if $DEBUG
   return ret
