@@ -1,5 +1,11 @@
 #!/usr/bin/ruby
 # -*- coding: utf-8 -*-
+
+# abbrabot.rb
+# Copyright (c) 2014 KITAJIMA, Akimasa
+
+# This software is released under the MIT License.
+
 include Math
 
 #require 'rubygems'
