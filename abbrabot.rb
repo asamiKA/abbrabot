@@ -282,10 +282,14 @@ if __FILE__ == $0
   source_PNAS_Phys = ['http://www.pnas.org/rss/Applied_Physical_Sciences.xml',
                       'http://www.pnas.org/rss/Computer_Sciences.xml',
                       'http://www.pnas.org/rss/Physics.xml']
+  url_length = nil
   while true
     now = Time.now
-    url_length = client.configuration.short_url_length if (now.hour == 8 && now.min < 30) || url_length == nil
-    p "url_length: #{ url_length }"
+    url_length_now = client.configuration.short_url_length if (now.hour == 8 && now.min < 30) || !url_length
+    if url_length_now != url_length
+      p "url_length: #{ url_length_now }"
+      url_length_now = url_length
+    end      
     if (now.wday.between? 1,6) && (now.hour.between? 8,19)
       sources = [source_PRL,source_PRE,
                  source_EPL,
