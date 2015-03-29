@@ -247,8 +247,8 @@ def read_twitter_config(file)
   return  Twitter::REST::Client.new do |config|
     config.consumer_key = conf[0]
     config.consumer_secret = conf[1]
-    config.oauth_token = conf[2]
-    config.oauth_token_secret = conf[3]
+    config.access_token = conf[2]
+    config.access_token_secret = conf[3]
   end
 end
 
