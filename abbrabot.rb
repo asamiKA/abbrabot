@@ -19,6 +19,7 @@ require 'json'
 require 'net/http'
 require 'kconv'
 require 'open-uri'
+require "microsoft_translator"
 #require 'babelphish'
 #require 'easy_translate'
 require 'cgi'
@@ -205,36 +206,50 @@ class String
     ret.gsub!(/^[、。]/,"")
     return ret
   end
-  def to_ja
-    str = self.size > 1000 ? self[/\A(.{1000})/,1] : self
-    #return Babelphish::Translator.translate(str,'ja')
-    # Exite翻訳
-    puts 'input string is '+str if $DEBUG
-    if Net::HTTP.post_form(URI.parse('http://www.excite.co.jp/world/english/'),{ "before" => str}).body =~ %r!<textarea id="after".*?>(.*)</textarea>!m
-      puts 'output string is '+$1.toutf8 if $DEBUG
-      return $1.toutf8 if Net::HTTP.post_form(URI.parse('http://www.excite.co.jp/world/english/'),{ "before" => str}).body =~ %r!<textarea id="after".*?>(.*)</textarea>!m
+  def to_ja(translator)
+    puts 'THE INPUT STRING IS: ' + self if $DEBUG
+    # Microsoft Translator
+    begin
+      return translator.translate(self,"en","ja","text/html")
+    rescue
+      puts "ERR[#{$!}]: Wait #{300} seconds."
+      p $!
+      sleep $DEBUG ? 10 : 300 ;
+      retry
     end
-    return nil
+    
+    #str = self.size > 1000 ? self[/\A(.{1000})/,1] : self
+    #return Babelphish::Translator.translate(str,'ja')
+    ## Exite翻訳
+    # if Net::HTTP.post_form(URI.parse('http://www.excite.co.jp/world/english/'),{ "before" => str}).body =~ %r!<textarea id="after".*?>(.*)</textarea>!m
+    #   puts 'THE OUTPUT STRING IS: '+$1.toutf8 if $DEBUG
+    #   return $1.toutf8 if Net::HTTP.post_form(URI.parse('http://www.excite.co.jp/world/english/'),{ "before" => str}).body =~ %r!<textarea id="after".*?>(.*)</textarea>!m
+    # end
+    # return nil
   end
 end
-def mkMessage content,url_length
-  p content if $DEBUG
+def mkMessage content,url_length,translator
+  pp content if $DEBUG
+  pp "URL LENGTH: #{ url_length }" if $DEBUG
   content.map!{ |x| x.gsub(/[\n\r]/,' ')}
   #url = bit_ly content[0]
   url = content[0]
-  title = (content[1].unescapeHTML.delHTMLtag).unescapeHTML.to_ja.unescapeHTML.abbr
-  abst = (content[2].unescapeHTML.delHTMLtag).unescapeHTML.split("\n").map{ |x| x.strip}.join(' ').to_ja
+  title = (content[1].unescapeHTML.delHTMLtag).unescapeHTML.to_ja(translator).unescapeHTML.abbr
+  abst = (content[2].unescapeHTML.delHTMLtag).unescapeHTML.split("\n").map{ |x| x.strip}.join(' ').to_ja(translator)
   #title = CGI.unescapeHTML(CGI.unescapeHTML(content[1].delHTMLtag).to_ja.abbr)
   #abst = CGI.unescapeHTML(content[2].delHTMLtag).to_ja
   if abst =~ /。/
     $'.strip!
     abst = $' if $'.size>0
   end
-  p abst.unescapeHTML if $DEBUG
+  pp "TITLE: " + title if $DEBUG
+  pp "ABST: " + abst.unescapeHTML if $DEBUG
   abst = abst.unescapeHTML.abbr
   abst.strip!
   abst = abst.unescapeHTML.abbr
+  pp "ABST: " + abst.unescapeHTML if $DEBUG
   return nil if abst == ""
+  pp [title.size, url_length]
   abst_length = 140 - title.size - url_length - 2
   abst = abst[/\A(.{#{abst_length}})/] if abst.size > abst_length
   ret = title + " " + url + " " + abst
@@ -252,10 +267,17 @@ def read_twitter_config(file)
   end
 end
 
+def read_microsoft_translator_config(file)
+  conf = IO.foreach(file).map(&:chomp)
+  return MicrosoftTranslator::Client.new(conf[0], conf[1])
+end
+
 if __FILE__ == $0
   exit 1 unless ARGV[0]
   client = read_twitter_config(ARGV[0])
   exit 1 unless client
+  exit 1 unless ARGV[1]
+  translator = read_microsoft_translator_config(ARGV[1])
   source_PRL = ['http://feeds.aps.org/rss/tocsec/PRL-SoftMatterBiologicalandInterdisciplinaryPhysics.xml']
   source_PRE = ['http://feeds.aps.org/rss/tocsec/PRE-Biologicalphysics.xml',
                 'http://feeds.aps.org/rss/tocsec/PRE-Statisticalphysics.xml',
@@ -288,8 +310,9 @@ if __FILE__ == $0
     url_length_now = client.configuration.short_url_length if (now.hour == 8 && now.min < 30) || !url_length
     if url_length_now != url_length
       p "url_length: #{ url_length_now }"
-      url_length_now = url_length
-    end      
+      #url_length_now = url_length
+      url_length = url_length_now
+    end
     if (now.wday.between? 1,6) && (now.hour.between? 8,19)
       sources = [source_PRL,source_PRE,
                  source_EPL,
@@ -320,7 +343,7 @@ if __FILE__ == $0
       end
       if cont
         write_log cont[0] unless $DEBUG
-        msg = mkMessage cont,url_length
+        msg = mkMessage(cont,url_length,translator)
         if $DEBUG
           p msg 
         else
@@ -345,6 +368,6 @@ if __FILE__ == $0
         end
       end
     end
-    sleep 1800
+    sleep $DEBUG ? 10 : 1800
   end
 end
