@@ -200,7 +200,7 @@ def get_from_PLOS source
   rss.items.each do |item|
     link = item.link.href
     next if atFile =~ Regexp.union(link)
-    return [link,item.title.content,item.content.content.gsub(/<p>.*<\/p>\n/,"").strip]
+    return [link,item.title.content,item.content.content.gsub(/\A<p>by.*?<\/p>/,"").strip]
   end
 end
 
@@ -293,6 +293,7 @@ if __FILE__ == $0
   exit 1 unless client
   exit 1 unless ARGV[1]
   translator = read_microsoft_translator_config(ARGV[1])
+  source_PLOS = ['http://www.plosone.org/article/feed/search?unformattedQuery=subject%3A%22Computational+biology%22&sort=Date%2C+newest+first','http://www.plosone.org/article/feed/search?unformattedQuery=subject%3A%22Theoretical+biology%22&sort=Date%2C+newest+first','http://www.plosone.org/article/feed/search?unformattedQuery=subject%3A%22Artificial+intelligence%22&sort=Date%2C+newest+first','http://www.plosone.org/taxonomy/browse/physics']
   source_PRL = ['http://feeds.aps.org/rss/tocsec/PRL-SoftMatterBiologicalandInterdisciplinaryPhysics.xml']
   source_PRE = ['http://feeds.aps.org/rss/tocsec/PRE-Biologicalphysics.xml',
                 'http://feeds.aps.org/rss/tocsec/PRE-Statisticalphysics.xml',
@@ -328,14 +329,14 @@ if __FILE__ == $0
       #url_length_now = url_length
       url_length = url_length_now
     end
-    if (now.wday.between? 1,6) && (now.hour.between? 8,19)
+    if $DEBUG || (now.wday.between? 1,6) && (now.hour.between? 8,19)
       sources = [source_PRL,source_PRE,
                  source_EPL,
                  source_PhysicaD,source_PhysicsLettersA,
                  source_arXiv_qBio,source_arXiv_condMat,source_arXiv_nlin,
                  source_PNAS_Bio,source_PNAS_Phys
                 ].shuffle #.map{ |x| x.shuffle}.shuffle.flatten
-      sources = [source_PNAS_Bio] if $DEBUG
+      sources = [source_PLOS] if $DEBUG
       cont = false
       sources.each do |source|
         source.shuffle.each do |x|
@@ -349,8 +350,10 @@ if __FILE__ == $0
           elsif x =~ /arxiv.org/
             cont = get_from_arXiv x
           elsif x=~ /pnas.org/
-            p x if $DEBUG
             cont = get_from_PNAS x
+          elsif x=~ /plosone\.org/
+            p x if $DEBUG
+            cont = get_from_PLOS x
           end
           break if cont
         end
