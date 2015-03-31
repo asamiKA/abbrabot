@@ -189,6 +189,21 @@ end
 #  # abst_EXP = %r!<dd id="articleAbsctract">.*?<P>(.*?)</P>!im
 #  # return get_cont source,item_EXP,title_EXP,abst_EXP
 #end
+def get_from_PLOS source
+  atFile = File.open(Already_Tweeted).read
+  begin
+    rss = RSS::Parser.parse(source)
+  rescue
+    write_log "cannot read RSS from #{source}: #{$!.class}: #{$!.message}"
+    return false
+  end
+  rss.items.each do |item|
+    link = item.link.href
+    next if atFile =~ Regexp.union(link)
+    return [link,item.title.content,item.content.content.gsub(/<p>.*<\/p>\n/,"").strip]
+  end
+end
+
 class String
   def unescapeHTML
     str = CGI.unescapeHTML(self)
