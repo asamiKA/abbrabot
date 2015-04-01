@@ -368,6 +368,9 @@ if __FILE__ == $0
         if $DEBUG
           p msg 
         else
+          unless msg
+            write_log "CANNOT MAKE MSG: "+cont[0]
+          end
           while msg
             begin
               client.update msg unless $DEBUG
@@ -383,9 +386,9 @@ if __FILE__ == $0
               next
             end
             write_log msg
-            File.open(Already_Tweeted,"a"){ |file| file.puts cont[0] }
             msg = nil
           end
+          File.open(Already_Tweeted,"a"){ |file| file.puts cont[0] }
         end
       end
     end
