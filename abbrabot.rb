@@ -310,6 +310,7 @@ if __FILE__ == $0
   source_arXiv_condMat = ['http://www.arxiv.org/list/cond-mat.dis-nn/pastweek?show=100',
                           'http://www.arxiv.org/list/cond-mat.other/pastweek?show=100',
                           'http://www.arxiv.org/list/cond-mat.stat-mech/pastweek?show=100']
+  source_arXiv = source_arXiv_qBio + source_arXiv_nlin + source_arXiv_condMat
   source_PNAS_Bio = ['http://www.pnas.org/rss/Biophysics_and_Computational_Biology.xml',
                      'http://www.pnas.org/rss/Evolution.xml',
                      #'http://www.pnas.org/rss/Systems_Biology.xml',
@@ -333,7 +334,8 @@ if __FILE__ == $0
       sources = [source_PRL,source_PRE,
                  source_EPL,
                  source_PhysicaD,source_PhysicsLettersA,
-                 source_arXiv_qBio,source_arXiv_condMat,source_arXiv_nlin,
+                 #source_arXiv_qBio,source_arXiv_condMat,source_arXiv_nlin,
+                 source_arXiv,
                  source_PNAS_Bio,source_PNAS_Phys,
                  source_PLOS
                 ].shuffle #.map{ |x| x.shuffle}.shuffle.flatten
