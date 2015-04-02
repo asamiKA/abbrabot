@@ -70,8 +70,8 @@ def get_from_arXiv source
 end
 def get_from_APS source
   item_EXP = %r!<rdf:li rdf:resource=\"(.*?)\"/>!
-  abst_EXP = %r!<div class='aps-abstractbox'><p>(.*?)</p>!m
-  title_EXP = %r!<h1>(.*?)</h1>!m
+  abst_EXP = %r!"article:published_time" /><meta content="(.*?)" name="description" />!m
+  title_EXP = %r!<h3>(.*?)</h3>!m
   return get_cont source,item_EXP,title_EXP,abst_EXP
 end
 def get_from_ScienceDirect source
