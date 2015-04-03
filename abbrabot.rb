@@ -217,8 +217,8 @@ class String
   def abbr
     ret = self.gsub(/([ァ-ン])([ァ-ンー]+)/){$1 + $2.gsub(/[ァ-オンャュョッ]/,"") }
     ret.gsub!(/[ぁ-んー\n\r性的我々$]/,"")
-    ret.gsub!(/([。、（） ])、/,'\1')
-    ret.gsub!(/^[、。]/,"")
+    ret.gsub!(/([。、（）\s])、/,'\1')
+    ret.gsub!(/^[、。\s]/,"")
     return ret
   end
   def to_ja(translator)
