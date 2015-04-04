@@ -25,6 +25,7 @@ require "microsoft_translator"
 require 'cgi'
 require 'erb'
 require 'rss'
+require 'nokogiri'
 # ログファイル名
 LOG_FILE = File.expand_path "./abbrabot.log"
 def write_log msg
@@ -62,6 +63,34 @@ def get_cont source,item_EXP,title_EXP,abst_EXP
   end
   return false  
 end
+def get_cont2 source,title_path,abst_path,item_path=nil
+  rss = nil
+  begin
+    rss = RSS::Parser.parse(source)
+  rescue RSS::InvalidRSSError # invalid な RSS を受け取った時
+    rss = RSS::Parser.parse(source,false)
+  rescue
+    write_log "[FAILD] get_cont2 of rss from #{source}: #{$!.class}: #{$!.message}"
+    return false
+  end
+  atFile = File.open(Already_Tweeted).read
+  rss.items.each do |x|
+    url = x.link
+    unless atFile =~ Regexp.union(url)
+      begin
+        doc = Nokogiri::HTML(open(url))
+      rescue
+        write_log "[FAILD] get_cont2 from #{url} : #{$!.class}: #{$!.message}"
+        next
+      end
+      title = (doc.search title_path)[0].content
+      abst = (doc.search abst_path)[0].content
+      url = (doc.search item_path)[0].to_s if item_path
+      return [url,title,abst] if abst && title && (abst != "")
+    end
+  end
+  return false
+end
 def get_from_arXiv source
   item_EXP = %r!"list-identifier"><a href="(.*?)"!
   abst_EXP = %r!Abstract:</span> (.*?)</blockquote>!m
@@ -69,10 +98,10 @@ def get_from_arXiv source
   return get_cont source,item_EXP,title_EXP,abst_EXP
 end
 def get_from_APS source
-  item_EXP = %r!<rdf:li rdf:resource=\"(.*?)\"/>!
-  abst_EXP = %r!"article:published_time" /><meta content="(.*?)" name="description" />!m
-  title_EXP = %r!<h3>(.*?)</h3>!m
-  return get_cont source,item_EXP,title_EXP,abst_EXP
+  title_path ="#title > div > large-12 > div.panel.header-panel > div > div.medium-9.columns > h3"
+  abst_path = "#article-content > section.article.open.abstract > div.content > p:nth-child(1)"
+  item_path = '//*[@id="article-content"]/section[1]/div[1]/p[2]/input/@value'
+  return get_cont2 source,title_path,abst_path,item_path
 end
 def get_from_ScienceDirect source
   atFile = File.open(Already_Tweeted).read
