@@ -104,7 +104,7 @@ def get_from_APS source
   return get_cont2 source,title_path,abst_path,item_path
 end
 def get_from_PNAS source
-  abst_path ="#p-4"
+  abst_path ="div.abstract p"
   title_path = "#article-title-1"
   return get_cont2 source, title_path, abst_path
 end
