@@ -103,6 +103,11 @@ def get_from_APS source
   item_path = '//*[@id="article-content"]/section[1]/div[1]/p[2]/input/@value'
   return get_cont2 source,title_path,abst_path,item_path
 end
+def get_from_PNAS source
+  abst_path ="#p-4"
+  title_path = "#article-title-1"
+  return get_cont2 source, title_path, abst_path
+end
 def get_from_ScienceDirect source
   atFile = File.open(Already_Tweeted).read
   begin
@@ -150,32 +155,6 @@ end
 #  end
 #  return false
 #end
-def get_from_PNAS source
-  item_EXP = %r!<rdf:li rdf:resource=\"(.*?)\" />!
-  title_EXP = %r!<title><\!\[CDATA\[(.*?)\[!m
-  abst_EXP = %r!<description><\!\[CDATA\[(.*?)\]!m
-  rss = URI(source).read
-  urls = rss.toutf8.scan(item_EXP).flatten
-  begin
-    atFile = File.open(Already_Tweeted).read
-  rescue
-    write_log "PNAS READ ERROR: #{$!.class}: #{$!.message}"
-    return false
-  end
-  urls.each do |x|
-    unless atFile =~ Regexp.union(x)
-      cont_EXP = %r!<item rdf:about="#{Regexp.escape x}">(.*?)</item>!m
-      p cont_EXP if $DEBUG
-      str = $1 if rss =~ cont_EXP
-      if str
-        title = $1 if str =~ title_EXP
-        abst = $1 if str =~ abst_EXP
-        return [x,title,abst] if abst && title && (abst != "")
-      end
-    end
-  end
-  return false
-end
 def get_from_IOP source
   atFile = File.open(Already_Tweeted).read
   begin
