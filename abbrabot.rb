@@ -345,11 +345,9 @@ if __FILE__ == $0
       sources = [source_PRL,source_PRE,
                  source_EPL,
                  source_PhysicaD,source_PhysicsLettersA,
-                 #source_arXiv_qBio,source_arXiv_condMat,source_arXiv_nlin,
-                 source_arXiv,
                  source_PNAS_Bio,source_PNAS_Phys,
                  source_PLOS
-                ].shuffle #.map{ |x| x.shuffle}.shuffle.flatten
+                ].shuffle << source_arXiv
       sources = [source_PLOS] if $DEBUG
       cont = false
       sources.each do |source|
@@ -361,9 +359,9 @@ if __FILE__ == $0
             cont = get_from_ScienceDirect x
           elsif x =~ /iop\.org/
             cont = get_from_IOP x
-          elsif x =~ /arxiv.org/
+          elsif x =~ /arxiv\.org/
             cont = get_from_arXiv x
-          elsif x=~ /pnas.org/
+          elsif x=~ /pnas\.org/
             cont = get_from_PNAS x
           elsif x=~ /plosone\.org/
             p x if $DEBUG
