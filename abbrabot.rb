@@ -246,8 +246,11 @@ class String
   def abbr
     ret = self.gsub(/([ァ-ン])([ァ-ンー]+)/){$1 + $2.gsub(/[ァ-オンャュョッ]/,"") }
     ret.gsub!(/[ぁ-んー\n\r性的我々$]/,"")
-    ret.gsub!(/([。、（）\s])、/,'\1')
-    ret.gsub!(/^[、。\s]/,"")
+    ret.gsub!(/([[:punct:]（）\s])[[:punct:]]+/,'\1')
+    ret.gsub!(/([[:alnum:]])\s/,'\1') # アルファベット間以外のスペースを除去
+    ret.gsub!(/\s([[:alnum:]])/,'\1')
+    ret.gsub!(/^[[:punct:]\s]*/,"") # 
+    ret.gsub!(/[[:punct:]\s]*$/,"")
     return ret
   end
   def to_ja(translator)
