@@ -210,6 +210,7 @@ def get_from_PLOS source
     next if atFile =~ Regexp.union(link)
     return [link,item.title.content,item.content.content.gsub(/\A<p>by.*?<\/p>/,"").strip]
   end
+  return false
 end
 
 class String
