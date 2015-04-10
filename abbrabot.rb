@@ -83,9 +83,9 @@ def get_cont2 source,title_path,abst_path,item_path=nil
         write_log "[FAILD] get_cont2 from #{url} : #{$!.class}: #{$!.message}"
         next
       end
-      title = (doc.search title_path)[0].content
-      abst = (doc.search abst_path)[0].content
-      url = (doc.search item_path)[0].to_s if item_path
+      title = (doc.search title_path)[0].content if (doc.search title_path)[0]
+      abst = (doc.search abst_path)[0].content if (doc.search abst_path)[0]
+      url = (doc.search item_path)[0].to_s if item_path && (doc.search item_path)[0]
       return [url,title,abst] if abst && title && (abst != "")
     end
   end
